@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import annotations
+
 import re
 from typing import List, Optional, Tuple, Union
 
@@ -17,6 +19,7 @@ from checkov.dockerfile.registry import registry as dockerfile_registry
 from checkov.github.registry import registry as github_configuration_registry
 from checkov.github_actions.checks.registry import registry as github_actions_jobs_registry
 from checkov.gitlab.registry import registry as gitlab_configuration_registry
+from checkov.gitlab_ci.checks.registry import registry as gitlab_ci_jobs_registry
 from checkov.kubernetes.checks.resource.registry import registry as k8_registry
 from checkov.secrets.runner import CHECK_ID_TO_SECRET_TYPE
 from checkov.serverless.registry import sls_registry
@@ -31,7 +34,7 @@ from checkov.common.bridgecrew.integration_features.features.policy_metadata_int
 ID_PARTS_PATTERN = re.compile(r'([^_]*)_([^_]*)_(\d+)')
 
 
-def get_compare_key(c):
+def get_compare_key(c: list[str] | tuple[str, ...]) -> list[tuple[str, str, int, int, str]]:
     res = []
     for match in ID_PARTS_PATTERN.finditer(c[0]):
         ckv, framework, number = match.groups()
@@ -52,9 +55,9 @@ def print_checks(frameworks: Optional[List[str]] = None, use_bc_ids: bool = Fals
 
 
 def get_checks(frameworks: Optional[List[str]] = None, use_bc_ids: bool = False) -> \
-        List[Tuple[str, str, str, str, str]]:
+        List[Tuple[str, str, int, int, str]]:
     framework_list = frameworks if frameworks else ["all"]
-    printable_checks_list = []
+    printable_checks_list: list[tuple[str, str, str, str, str]] = []
 
     def add_from_repository(registry: Union[BaseCheckRegistry, BaseGraphRegistry], checked_type: str, iac: str) -> None:
         nonlocal printable_checks_list
@@ -63,10 +66,10 @@ def get_checks(frameworks: Optional[List[str]] = None, use_bc_ids: bool = False)
                 printable_checks_list.append((check.get_output_id(use_bc_ids), checked_type, entity, check.name, iac))
         elif isinstance(registry, BaseGraphRegistry):
             for check in registry.checks:
-                if not check.resource_types:
+                if not check.resource_types:  # type:ignore[attr-defined]  # can be removed, when common.graph is also type checked
                     # only for platform custom polices with resource_types == all
-                    check.resource_types = ['all']
-                for rt in check.resource_types:
+                    check.resource_types = ['all']  # type:ignore[attr-defined]  # can be removed, when common.graph is also type checked
+                for rt in check.resource_types:  # type:ignore[attr-defined]  # can be removed, when common.graph is also type checked
                     printable_checks_list.append((check.get_output_id(use_bc_ids), checked_type, rt, check.name, iac))
 
     if any(x in framework_list for x in ("all", "terraform")):
@@ -96,6 +99,8 @@ def get_checks(frameworks: Optional[List[str]] = None, use_bc_ids: bool = False)
         add_from_repository(github_configuration_registry, "github_configuration", "github_configuration")
     if any(x in framework_list for x in ("all", "github_actions")):
         add_from_repository(github_actions_jobs_registry, "jobs", "github_actions")
+    if any(x in framework_list for x in ("all", "gitlab_ci")):
+        add_from_repository(gitlab_ci_jobs_registry, "jobs", "gitlab_ci")        
     if any(x in framework_list for x in ("all", "gitlab_configuration")):
         add_from_repository(gitlab_configuration_registry, "gitlab_configuration", "gitlab_configuration")
     if any(x in framework_list for x in ("all", "bitbucket_configuration")):
@@ -118,7 +123,7 @@ def get_checks(frameworks: Optional[List[str]] = None, use_bc_ids: bool = False)
             if use_bc_ids:
                 check_id = metadata_integration.get_bc_id(check_id)
             printable_checks_list.append((check_id, check_type, "secrets", check_type, "secrets"))
-    return sorted(printable_checks_list, key=get_compare_key)
+    return sorted(printable_checks_list, key=get_compare_key)  # type:ignore[arg-type]
 
 
 if __name__ == '__main__':
