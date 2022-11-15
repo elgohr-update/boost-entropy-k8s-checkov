@@ -2,14 +2,14 @@ import unittest
 from pathlib import Path
 
 from checkov.runner_filter import RunnerFilter
-from checkov.terraform.checks.resource.aws.NetworkACLUnrestrictedIngress20 import check
+from checkov.terraform.checks.resource.aws.SecurityGroupUnrestrictedIngressAny import check
 from checkov.terraform.runner import Runner
 
 
-class TestNetworkACLUnrestrictedIngress20(unittest.TestCase):
+class TestSecurityGroupUnrestrictedIngressAny(unittest.TestCase):
     def test(self):
         # given
-        test_files_dir = Path(__file__).parent / "example_NetworkACLUnrestrictedIngress20"
+        test_files_dir = Path(__file__).parent / "example_SecurityGroupUnrestrictedIngressAny"
 
         # when
         report = Runner().run(root_folder=str(test_files_dir), runner_filter=RunnerFilter(checks=[check.id]))
@@ -18,26 +18,20 @@ class TestNetworkACLUnrestrictedIngress20(unittest.TestCase):
         summary = report.get_summary()
 
         passing_resources = {
-            "aws_network_acl.pass",
-            "aws_network_acl.pass2",
-            "aws_network_acl_rule.pass",
-            "aws_network_acl_rule.pass2",
+            "aws_security_group.pass",
+            "aws_security_group_rule.pass",
         }
+
         failing_resources = {
-            "aws_network_acl.fail",
-            "aws_network_acl.fail2",
-            "aws_network_acl.fail3",
-            "aws_network_acl_rule.fail",
-            "aws_network_acl_rule.fail2",
-            "aws_network_acl_rule.public_ingress",
-            "aws_network_acl.network_acl",
+            "aws_security_group.fail",
+            "aws_security_group_rule.fail",
         }
 
         passed_check_resources = {c.resource for c in report.passed_checks}
         failed_check_resources = {c.resource for c in report.failed_checks}
 
-        self.assertEqual(summary["passed"], 4)
-        self.assertEqual(summary["failed"], 7)
+        self.assertEqual(summary["passed"], 2)
+        self.assertEqual(summary["failed"], 2)
         self.assertEqual(summary["skipped"], 0)
         self.assertEqual(summary["parsing_errors"], 0)
 
